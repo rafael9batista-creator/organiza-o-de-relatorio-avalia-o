@@ -62,10 +62,11 @@ Em um subgrupo com várias fotos do mesmo equipamento (vista geral, placa, placa
 
 ## Observações e inconsistências
 
-- **Quadro de Observações** (tabela no fim do relatório, antes dos anexos, e também em `.xlsx`): colunas `FOTO (nova)`, `FOTO (antiga)`, `TAG`, `Tipo`, `Observação`, `Decisão do Rafael` (vazia). Tipos: `LEITURA PARCIAL`, `ILEGÍVEL`, `INCONSISTÊNCIA`, `DUPLICATA`, `ORDEM` (foto realocada), `DATA` (data da legenda ≠ data do arquivo), `FONTE` (página ANP em pasta de outra região).
+- **Quadro de Observações** (tabela no fim do relatório, antes dos anexos, e aba `OBSERVACOES` do mapa): colunas `FOTO (nova)`, `FOTO (antiga)`, `TAG`, `Tipo`, `Observação`, `Decisão do Rafael` (vazia). Tipos: `LEITURA PARCIAL`, `ILEGÍVEL`, `INCONSISTÊNCIA`, `DUPLICATA`, `ORDEM` (foto realocada), `DATA` (data da legenda ≠ data do arquivo), `FONTE` (página ANP em pasta de outra região).
 - **No corpo do relatório**, abaixo da legenda, uma linha só para o tipo `INCONSISTÊNCIA`, em destaque (texto vermelho ou realce amarelo, uma vez só, sem repetir a observação inteira): `Verificar: legenda diz 1771 rpm; placa na foto lê 1750 rpm.` Nenhum outro tipo aparece no corpo.
 - **O que é inconsistência:** modelo, série, TAG, grandeza, ano ou data na legenda diferente do que se lê na foto; foto cuja placa é de outro TAG que não o da legenda; foto alocada a um subgrupo mas que mostra outro equipamento; legenda de bomba com motor de outra bomba.
-- Para julgar, **abra e olhe cada foto que tenha placa legível** e compare campo a campo com a legenda. Foto sem placa ou vista geral: conferir só TAG/subgrupo e data. Se a resolução da imagem no docx não permitir leitura, use o arquivo original da árvore (localizado pelo hash, abaixo) e, se mesmo assim não der, registre `ILEGÍVEL`, nunca `INCONSISTÊNCIA` por dúvida.
+- **Leitura em dois níveis.** Nível 1: abrir a imagem extraída do próprio docx e comparar campo a campo com a legenda; se tudo se lê e bate, registrar `conferida_docx = SIM` no mapa e seguir. Nível 2: só quando a imagem do docx deixa dúvida em algum campo (resolução, reflexo, recorte), abrir o arquivo original da árvore `ANEXO_IV_ME_fotos` (já localizado pelo hash no mapa) e reler; registrar `conferida_original = SIM`. Se nem a original resolve, registrar `ILEGÍVEL` no campo em dúvida, nunca `INCONSISTÊNCIA` por dúvida.
+- Alvo da conferência: todas as fotos de placa (equipamento e motor); nas vistas gerais e detalhes, conferir só TAG/subgrupo e data.
 
 ## Pontos conhecidos do inventário de 13/10 (conferir com prioridade)
 
@@ -83,13 +84,25 @@ Se alguma dessas fotos estiver no relatório, a legenda tem de bater com o que a
 
 ## Método (executar nesta ordem, sem perguntar entre passos)
 
-1. **Inventário da v4:** com `python-docx`, percorrer o documento na ordem e extrair, para cada foto, a imagem (salvar em `07_Saidas_do_Claude\fotos_v4_extraidas\NNN.jpg`), o parágrafo de legenda e o número atual. Gerar `07_Saidas_do_Claude\INVENTARIO_v4.csv` com: `num_antigo, legenda_atual, grupo, subgrupo, tag, tipo_foto (vista geral/placa/placa motor/detalhe), fonte, data_legenda, sha1_imagem, arquivo_original, data_arquivo`. Conte quantas fotos há e confira que cada imagem tem exatamente uma legenda (imagem sem legenda ou legenda sem imagem entram no Quadro como `ORDEM`).
-2. **Vínculo com a árvore:** calcular SHA-1 (e, se o docx recomprimiu, hash perceptual) de cada imagem e casar com os arquivos de `ANEXO_IV_ME_fotos` para recuperar nome original, pasta e data. Com isso: (a) data real da foto, (b) pasta/TAG de origem, (c) duplicatas remanescentes (mesmo hash ou pHash muito próximo).
-3. **Plano de ordem:** montar a lista de grupos e subgrupos na ordem do laudo (Item 01 → Item 18, com os skids 14a–14e e tanques TQ-3101 → TQ-3112) e propor a nova sequência. Toda foto que mudar de posição relativa recebe registro `ORDEM` no Quadro ("era FOTO 312, entre TQ-3101; agora FOTO 330, em TQ-3102").
-4. **Conferência visual:** olhar as fotos de placa (todas) e amostrar as demais; preencher o Quadro.
-5. **Legendas novas:** gerar a coluna `legenda_nova` no inventário, aplicando o padrão. Validar por script: toda legenda nova começa com `FOTO NNN – `, termina com uma das três fontes, não contém "(", ")", "?", "parcial", "ilegível", "conferir", "provável", "REVISAR"; a numeração é contínua; nenhum número técnico da legenda antiga desapareceu (comparar o conjunto de tokens numéricos antigo × novo por foto e listar as diferenças).
-6. **Gerar a v5:** copiar a v4 e, na cópia, reordenar os blocos foto+legenda, substituir o texto das legendas e inserir o Quadro de Observações no fim. Salvar `2026-10-16_Relatorio_Fotografico_ME_Ultracargo_v5.docx`. Abrir de novo com `python-docx` e conferir: mesmo número de imagens da v4, legendas na ordem do inventário, nenhuma imagem perdida ou duplicada pelo script.
-7. **Entregáveis em `07_Saidas_do_Claude\`:** `INVENTARIO_v5.csv` (com legenda antiga, nova, nº antigo, nº novo), `DE_PARA_numeracao_v5.csv`, `OBSERVACOES_v5.xlsx`, e o script usado (`scripts\relatorio_fotografico_v5.py`), para que eu rode de novo se mudar algo.
+**Passo 1 – Mapa da v4 (antes de mudar qualquer coisa).** Com `python-docx`, percorrer o documento na ordem e extrair, para cada foto, a imagem (salvar em `07_Saidas_do_Claude\fotos_v4_extraidas\NNN.jpg`), o parágrafo de legenda e o número atual. Gravar `07_Saidas_do_Claude\MAPA_FOTOS_v4_v5.xlsx`, aba `MAPA`, uma linha por foto, com as colunas ANTES já preenchidas:
+
+| ANTES (passo 1) | DEPOIS (passos 3 a 6) |
+|---|---|
+| `num_antigo`, `pos_antiga` (ordem no docx), `legenda_antiga`, `grupo_antigo`, `subgrupo_antigo`, `tag_lida_na_legenda`, `tipo_foto` (vista geral / placa / placa motor / detalhe), `fonte`, `data_legenda`, `sha1_docx`, `arquivo_original`, `pasta_original`, `data_arquivo`, `duplicata_de` | `num_novo`, `pos_nova`, `grupo_novo`, `subgrupo_novo`, `legenda_nova`, `mudou_posicao` (S/N), `conferida_docx`, `conferida_original`, `tag_lida_na_foto`, `tipo_obs`, `observacao`, `tokens_numericos_perdidos` |
+
+Ainda no passo 1 (tudo por script, sem olhar imagem): calcular SHA-1 (e pHash, se o docx recomprimiu) de cada imagem e casar com os arquivos de `ANEXO_IV_ME_fotos` para preencher `arquivo_original`, `pasta_original`, `data_arquivo` e `duplicata_de`. Conferir que cada imagem tem exatamente uma legenda (imagem sem legenda ou legenda sem imagem entram como `ORDEM`). Dizer em uma linha quantas fotos há, quantas casaram com a árvore e quantas duplicatas restam, e seguir.
+
+**Passo 2 – Grupos.** Listar os grupos e subgrupos que existem no mapa, unificar grafias (Centran/CETRAN/Cetran 1/01) e fixar um nome por grupo (aba `GRUPOS`: `nome_na_v4` → `nome_padrao`, ordem no laudo).
+
+**Passo 3 – Ordem.** Montar a sequência Item 01 → Item 18 (skids 14a–14e, tanques TQ-3101 → TQ-3112, plataformas 08 → 14), usando `pasta_original` como critério de desempate quando a legenda não diz o TAG. Preencher `pos_nova`, `num_novo`, `mudou_posicao`; toda foto com `mudou_posicao = S` ganha linha `ORDEM` nas observações ("era FOTO 312, entre TQ-3101; agora FOTO 330, em TQ-3102").
+
+**Passo 4 – Conferência visual (dois níveis, conforme a seção acima).** Preencher `conferida_docx`, `conferida_original`, `tag_lida_na_foto`, `tipo_obs`, `observacao`. Começar pelos pontos conhecidos, depois todas as placas, depois amostra das demais.
+
+**Passo 5 – Legendas novas.** Preencher `legenda_nova` aplicando o padrão e validar por script: começa com `FOTO NNN – `, termina com uma das três fontes, não contém "(", ")", "?", "parcial", "ilegível", "conferir", "provável", "REVISAR"; numeração contínua; `tokens_numericos_perdidos` vazio para toda foto (comparar o conjunto de números da legenda antiga × nova; diferença só é aceita quando o número era a própria TAG repetida ou o número antigo da foto).
+
+**Passo 6 – Gerar a v5.** Copiar a v4 e, na cópia, reordenar os blocos foto+legenda pela `pos_nova`, substituir o texto das legendas pela `legenda_nova`, inserir a linha "Verificar:" nas `INCONSISTÊNCIA` e o Quadro de Observações no fim. Salvar `2026-10-16_Relatorio_Fotografico_ME_Ultracargo_v5.docx`. Reabrir com `python-docx` e conferir contra o mapa: mesmo número de imagens da v4, legendas na ordem de `pos_nova`, nenhuma imagem perdida ou duplicada pelo script; registrar o resultado na aba `VALIDACAO`.
+
+**Passo 7 – Entregáveis em `07_Saidas_do_Claude\`:** `MAPA_FOTOS_v4_v5.xlsx` (abas `MAPA`, `GRUPOS`, `OBSERVACOES`, `DE_PARA` com só `num_antigo` → `num_novo`, `VALIDACAO`), e o script usado (`scripts\relatorio_fotografico_v5.py`), para que eu rode de novo se mudar algo.
 
 ## Relato final (uma vez só, no fim)
 
